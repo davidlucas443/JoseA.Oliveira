@@ -141,8 +141,7 @@ function App() {
       <header className="site-header">
         <div className="container header-inner">
           <div className="brand-block">
-            <img className="brand-logo-mark" src="/images/image.png" alt="Logo JAO" />
-            <div><div className="brand-name">{siteConfig.realtorName}</div><div className="brand-creci">CRECI {siteConfig.creci}</div></div>
+            <img className="site-logo" src="/images/logo-jose-oliveira.png" alt="José A. Oliveira, corretor de imóveis, CRECI 331912-F" />
           </div>
 
           <nav className="desktop-nav" aria-label="Navegação principal">
@@ -519,7 +518,7 @@ function App() {
       <footer className="site-footer">
         <div className="container footer-grid">
           <div className="footer-intro">
-            <div className="footer-brand"><img className="brand-logo-mark footer-logo" src="/images/image.png" alt="Logo JAO" /><div><strong>{siteConfig.realtorName}</strong><span>CRECI {siteConfig.creci}</span></div></div>
+            <img className="site-logo footer-logo" src="/images/logo-jose-oliveira.png" alt="José A. Oliveira, corretor de imóveis, CRECI 331912-F" />
             <p>Orientação próxima para comparar imóveis e escolher com mais segurança.</p>
             <span className="footer-creci">CRECI {siteConfig.creci}</span>
           </div>
