@@ -873,7 +873,7 @@ a:focus-visible {
   .header-inner { flex-direction: row; min-height: 72px; }
   .header-actions { width: auto; }
   .header-actions .button { display: none; }
-  .site-logo { width: min(220px, 62vw); }
+  .site-logo { width: min(250px, 68vw); }
   .brand-name { font-size: 0.92rem; }
   .step-card:not(:last-child)::after { display: none; }
 
