@@ -942,6 +942,10 @@ a:focus-visible {
 }
 
 @media (max-width: 700px) {
+  .hero-media {
+    display: none;
+  }
+
   .filter-grid,
   .property-grid,
   .steps-grid,
