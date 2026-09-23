@@ -1,42 +1,38 @@
-export type PropertyType = 'Apartamento' | 'Casa';
-export type PropertyCategory =
-  | 'Na planta'
-  | 'Em construção'
-  | 'Quase pronto'
-  | 'Pronto'
-  | 'Imóvel avulso';
+export type PropertyRegion =
+  | 'Centro'
+  | 'Grande São Paulo'
+  | 'Interior'
+  | 'Litoral'
+  | 'Zona Leste'
+  | 'Zona Norte'
+  | 'Zona Oeste'
+  | 'Zona Sul';
 
 export interface Property {
   id: string;
   slug: string;
   name: string;
   builder: string;
-  type: PropertyType;
-  category: PropertyCategory;
-  region: string;
+  type: 'Apartamento';
+  region: PropertyRegion;
   city: string;
-  neighborhood: string;
-  price: number;
-  area: number;
-  bedrooms: number;
-  bathrooms: number;
-  parkingSpaces: number;
-  deliveryDate?: string;
-  mcmv: boolean;
+  location: string;
+  areaLabel?: string;
+  bedroomsLabel?: string;
+  bedroomOptions?: number[];
+  parkingLabel?: string;
+  statusLabel?: string;
   featured: boolean;
   description: string;
   highlights: string[];
   images: string[];
+  sourceUrl: string;
 }
 
 export interface PropertyFilters {
   search: string;
   region: string;
-  type: string;
-  category: string;
   builder: string;
   bedrooms: string;
-  priceRange: string;
-  mcmv: boolean;
-  sort: 'menor-preco' | 'maior-preco';
+  sort: 'nome' | 'regiao';
 }

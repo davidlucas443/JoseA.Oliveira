@@ -1,50 +1,84 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { properties } from './data/properties';
+import { featuredProperties, properties } from './data/properties';
 import { propertyCatalogNote, siteConfig } from './config/site';
 import type { Property, PropertyFilters } from './types/property';
-import { formatArea, formatCurrency, normalizeText } from './utils/formatters';
+import { normalizeText } from './utils/formatters';
 import { buildSimulationMessage, getWhatsAppUrl } from './utils/whatsapp';
 
 const defaultFilters: PropertyFilters = {
   search: '',
   region: 'all',
-  type: 'all',
-  category: 'all',
   builder: 'all',
   bedrooms: 'all',
-  priceRange: 'all',
-  mcmv: false,
-  sort: 'menor-preco',
+  sort: 'nome',
 };
 
-const regionOptions = ['all', 'Zona Leste', 'Zona Sul', 'Zona Norte', 'Zona Oeste', 'Osasco', 'Guarulhos', 'Grande São Paulo'];
-const typeOptions = ['all', 'Apartamento', 'Casa'];
-const categoryOptions = ['all', 'Na planta', 'Em construção', 'Quase pronto', 'Pronto', 'Imóvel avulso'];
-const builderOptions = ['all', ...new Set(properties.map((property) => property.builder))];
-const bedroomsOptions = ['all', '1', '2', '3', '4'];
-const priceOptions = ['all', '0-400000', '400001-600000', '600001-800000', '800001-999999'];
+const regionOrder = ['Centro', 'Grande São Paulo', 'Interior', 'Litoral', 'Zona Leste', 'Zona Norte', 'Zona Oeste', 'Zona Sul'];
+const regionOptions = ['all', ...regionOrder.filter((region) => properties.some((property) => property.region === region))];
+const builderOptions = ['all', ...new Set(properties.map((property) => property.builder).sort((a, b) => a.localeCompare(b, 'pt-BR')))];
+const featuredBuilders = [...new Set(featuredProperties.map((property) => property.builder))];
+const otherBuilders = builderOptions.slice(1).filter((builder) => !featuredBuilders.includes(builder));
+const bedroomsOptions = ['all', '0', '1', '2', '3', '4'];
 const whatsappGreeting = 'Olá, José! Visitei seu site e gostaria de conhecer as opções de imóveis disponíveis.';
 const visitMessage = 'Olá, José! Gostaria de consultar os decorados disponíveis e agendar uma visita.';
 const faqItems = [
   ['Como encontro o imóvel certo?', 'José reúne possibilidades de diferentes construtoras e imóveis avulsos de acordo com seu perfil. Disponibilidade, valores e condições são confirmados no atendimento.'],
-  ['José atende quais regiões?', 'O atendimento cobre São Paulo, Grande São Paulo e interior, de forma online ou presencial conforme a necessidade.'],
+  ['José atende quais regiões?', 'O catálogo atual reúne opções na cidade de São Paulo e na Grande São Paulo, com atendimento online ou presencial conforme a necessidade.'],
   ['Posso visitar um imóvel decorado?', 'Sim. Fale com José pelo WhatsApp para consultar os decorados disponíveis e combinar uma visita.'],
   ['A pré-simulação garante aprovação de crédito?', 'Não. Ela serve apenas para organizar o primeiro contato. A aprovação depende da análise da instituição financeira e das regras vigentes.'],
   ['Como funciona o atendimento?', 'José entende seu perfil, compara opções de localização, configuração e condições, e acompanha você nas próximas etapas da escolha.'],
 ];
 const navigationItems = [
   ['Início', '#inicio'],
+  ['Destaques', '#destaques'],
   ['Imóveis', '#imoveis'],
   ['Sobre José', '#sobre-jose'],
   ['Simulação', '#simulacao'],
   ['Perguntas frequentes', '#faq'],
 ];
 
+interface PropertyCardProps {
+  property: Property;
+  onSelect: (property: Property) => void;
+}
+
+function PropertyCard({ property, onSelect }: PropertyCardProps) {
+  const metadata = [property.areaLabel, property.bedroomsLabel, property.parkingLabel].filter(Boolean);
+
+  return (
+    <article className="property-card">
+      <div className="property-media">
+        <img src={property.images[0]} alt={`${property.name}, imagem do book do empreendimento`} loading="lazy" />
+        {property.featured && <span className="featured-badge">Em destaque</span>}
+      </div>
+      <div className="property-body">
+        <div className="property-header-row">
+          <h3>{property.name}</h3>
+          <span className="property-builder">{property.builder}</span>
+        </div>
+        <p className="property-location">{property.location} • {property.city}</p>
+        {metadata.length > 0 && (
+          <div className="property-meta">
+            {metadata.map((item) => <span key={item}>{item}</span>)}
+          </div>
+        )}
+        <div className="property-status-row">
+          <span className="status-pill">{property.region}</span>
+          {property.statusLabel && <span className="status-pill status-green">{property.statusLabel}</span>}
+        </div>
+        <button className="button button-primary full-width" onClick={() => onSelect(property)}>Ver detalhes</button>
+      </div>
+    </article>
+  );
+}
+
 function App() {
   const [filters, setFilters] = useState<PropertyFilters>(defaultFilters);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [showAllFeatured, setShowAllFeatured] = useState(false);
+  const [showAllCatalog, setShowAllCatalog] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
     whatsapp: '',
@@ -61,30 +95,20 @@ function App() {
 
   const filteredProperties = useMemo(() => {
     const filtered = properties.filter((property) => {
-      const matchesSearch = !filters.search || [property.name, property.neighborhood, property.city].some((value) => normalizeText(value).includes(normalizeText(filters.search)));
+      const matchesSearch = !filters.search || [property.name, property.location, property.city, property.builder].some((value) => normalizeText(value).includes(normalizeText(filters.search)));
       const matchesRegion = filters.region === 'all' || property.region === filters.region;
-      const matchesType = filters.type === 'all' || property.type === filters.type;
-      const matchesCategory = filters.category === 'all' || property.category === filters.category;
       const matchesBuilder = filters.builder === 'all' || property.builder === filters.builder;
-      const matchesBedrooms = filters.bedrooms === 'all' || property.bedrooms.toString() === filters.bedrooms;
-      const matchesMcmv = !filters.mcmv || property.mcmv;
+      const matchesBedrooms = filters.bedrooms === 'all' || property.bedroomOptions?.includes(Number(filters.bedrooms));
 
-      let matchesPrice = true;
-      if (filters.priceRange !== 'all') {
-        const [min, max] = filters.priceRange.split('-').map(Number);
-        if (Number.isFinite(min) && Number.isFinite(max)) {
-          matchesPrice = property.price >= min && property.price <= max;
-        } else if (Number.isFinite(min)) {
-          matchesPrice = property.price >= min;
-        }
-      }
-
-      return matchesSearch && matchesRegion && matchesType && matchesCategory && matchesBuilder && matchesBedrooms && matchesPrice && matchesMcmv;
+      return matchesSearch && matchesRegion && matchesBuilder && matchesBedrooms;
     });
 
     return filtered.sort((a, b) => {
-      if (filters.sort === 'maior-preco') return b.price - a.price;
-      return a.price - b.price;
+      if (filters.sort === 'regiao') {
+        const byRegion = regionOptions.indexOf(a.region) - regionOptions.indexOf(b.region);
+        if (byRegion !== 0) return byRegion;
+      }
+      return a.name.localeCompare(b.name, 'pt-BR');
     });
   }, [filters]);
 
@@ -112,9 +136,13 @@ function App() {
 
   const handleFilterChange = (key: keyof PropertyFilters, value: string | boolean) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+    setShowAllCatalog(false);
   };
 
-  const clearFilters = () => setFilters(defaultFilters);
+  const clearFilters = () => {
+    setFilters(defaultFilters);
+    setShowAllCatalog(false);
+  };
 
   const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -173,16 +201,16 @@ function App() {
             <div className="hero-copy">
               <p className="eyebrow">Corretor imobiliário em São Paulo</p>
               <h1>Encontre seu imóvel com orientação em cada etapa.</h1>
-              <p className="lead">Apartamentos e oportunidades em São Paulo, Grande São Paulo e interior, com atendimento próximo para ajudar você a comparar opções e tomar uma decisão mais segura.</p>
+              <p className="lead">Apartamentos Minha Casa Minha Vida em São Paulo e Grande São Paulo, com atendimento próximo para ajudar você a comparar opções e tomar uma decisão mais segura.</p>
               <div className="cta-row">
                 <a href="#imoveis" className="button button-primary">Conhecer os imóveis</a>
                 <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="button button-secondary">Falar com José</a>
               </div>
-              <ul className="hero-pills" aria-label="Indicadores do corretor">
+              {/* <ul className="hero-pills" aria-label="Indicadores do corretor">
                 <li>CRECI {siteConfig.creci}</li>
                 <li>Atendimento humano</li>
                 <li>{siteConfig.serviceArea}</li>
-              </ul>
+              </ul> */}
             </div>
             <div className="hero-media">
               <div className="image-shell">
@@ -197,15 +225,45 @@ function App() {
             <div className="section-heading">
               <p className="eyebrow">Áreas atendidas</p>
               <h2>Atendimento onde você procura</h2>
-              <p>Encontre oportunidades em toda a cidade de São Paulo, Grande São Paulo e também no interior. José ajuda você a comparar localização, características e condições de cada imóvel.</p>
+              <p>Encontre oportunidades Minha Casa Minha Vida nas regiões validadas pelos books. José ajuda você a comparar localização, características e condições de cada imóvel.</p>
             </div>
             <div className="area-grid">
-              {[['São Paulo', '/images/properties/edificios-cidade.jpeg'], ['Grande São Paulo', '/images/properties/edificios-condominio.jpeg'], ['Interior', '/images/properties/apartamento-decorado.jpeg']].map(([name, image]) => (
-                <article className="area-card" key={name}>
-                  <img src={image} alt={`${name}, imagem imobiliária ilustrativa`} loading="lazy" />
-                  <div><h3>{name}</h3><p>Oportunidades ilustrativas para conhecer possibilidades.</p></div>
+              {regionOptions.slice(1).map((region) => {
+                const regionProperties = properties.filter((property) => property.region === region);
+                return (
+                <article className="area-card" key={region}>
+                  <img src={regionProperties[0].images[0]} alt={`Empreendimento na região ${region}`} loading="lazy" />
+                  <div>
+                    <h3>{region}</h3>
+                    <p>{regionProperties.length} empreendimentos no catálogo</p>
+                    <a href="#imoveis" onClick={() => setFilters((current) => ({ ...current, region }))}>Ver imóveis</a>
+                  </div>
                 </article>
-              ))}
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section id="destaques" className="section featured-section">
+          <div className="container">
+            <div className="section-heading">
+              <p className="eyebrow">Seleção curada</p>
+              <h2>Imóveis em destaque</h2>
+              <p>Uma seleção do catálogo Minha Casa Minha Vida, com preferência por Cury e Kazzas e por books com localização, lazer e apresentação visual mais completos.</p>
+            </div>
+            <div className={`property-grid featured-grid ${showAllFeatured ? 'mobile-expanded' : 'mobile-collapsed'}`}>
+              {featuredProperties.map((property) => <PropertyCard key={property.id} property={property} onSelect={setSelectedProperty} />)}
+            </div>
+            <div className="mobile-list-action">
+              <button
+                className="button button-secondary"
+                type="button"
+                aria-expanded={showAllFeatured}
+                onClick={() => setShowAllFeatured((current) => !current)}
+              >
+                {showAllFeatured ? 'Mostrar menos destaques' : 'Ver todos os 9 destaques'}
+              </button>
             </div>
           </div>
         </section>
@@ -214,7 +272,7 @@ function App() {
           <div className="container">
             <div className="section-heading">
               <p className="eyebrow">Catálogo</p>
-              <h2>Imóveis de grandes construtoras</h2>
+              <h2>Imóveis Minha Casa Minha Vida</h2>
               <p>{propertyCatalogNote}</p>
             </div>
 
@@ -244,24 +302,6 @@ function App() {
                 </label>
 
                 <label>
-                  <span>Tipo</span>
-                  <select value={filters.type} onChange={(event) => handleFilterChange('type', event.target.value)}>
-                    {typeOptions.map((option) => (
-                      <option key={option} value={option}>{option === 'all' ? 'Todos' : option}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  <span>Estágio</span>
-                  <select value={filters.category} onChange={(event) => handleFilterChange('category', event.target.value)}>
-                    {categoryOptions.map((option) => (
-                      <option key={option} value={option}>{option === 'all' ? 'Todos' : option}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
                   <span>Construtora</span>
                   <select value={filters.builder} onChange={(event) => handleFilterChange('builder', event.target.value)}>
                     {builderOptions.map((option) => (
@@ -274,16 +314,7 @@ function App() {
                   <span>Quartos</span>
                   <select value={filters.bedrooms} onChange={(event) => handleFilterChange('bedrooms', event.target.value)}>
                     {bedroomsOptions.map((option) => (
-                      <option key={option} value={option}>{option === 'all' ? 'Qualquer' : `${option} quarto(s)`}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  <span>Faixa de preço</span>
-                  <select value={filters.priceRange} onChange={(event) => handleFilterChange('priceRange', event.target.value)}>
-                    {priceOptions.map((option) => (
-                      <option key={option} value={option}>{option === 'all' ? 'Qualquer valor' : `R$ ${option.replace('-', ' a R$ ').replace('0-400000', '0 a 400.000').replace('400001-600000', '400.001 a 600.000').replace('600001-800000', '600.001 a 800.000').replace('800001-999999', '800.001 a 999.999')}`}</option>
+                      <option key={option} value={option}>{option === 'all' ? 'Qualquer' : option === '0' ? 'Studio' : `${option} dormitório(s)`}</option>
                     ))}
                   </select>
                 </label>
@@ -291,14 +322,9 @@ function App() {
                 <label>
                   <span>Ordenar</span>
                   <select value={filters.sort} onChange={(event) => handleFilterChange('sort', event.target.value)}>
-                    <option value="menor-preco">Menor preço</option>
-                    <option value="maior-preco">Maior preço</option>
+                    <option value="nome">Nome</option>
+                    <option value="regiao">Região</option>
                   </select>
-                </label>
-
-                <label className="checkbox-wrap">
-                  <input type="checkbox" checked={filters.mcmv} onChange={(event) => handleFilterChange('mcmv', event.target.checked)} />
-                  <span>Minha Casa Minha Vida</span>
                 </label>
               </div>
 
@@ -313,36 +339,20 @@ function App() {
                 <p>Tente outra busca ou limpe os filtros para ampliar a busca.</p>
               </div>
             ) : (
-              <div className="property-grid">
-                {filteredProperties.map((property) => (
-                  <article key={property.id} className="property-card">
-                    <div className="property-media">
-                      <img src={property.images[0]} alt={`Imóvel ${property.name}`} loading="lazy" />
-                    </div>
-                    <div className="property-body">
-                      <div className="property-header-row">
-                        <h3>{property.name}</h3>
-                        <span className="property-builder">{property.builder}</span>
-                      </div>
-                      <p className="property-location">{property.neighborhood} • {property.region}</p>
-
-                      <div className="property-price">{formatCurrency(property.price)}</div>
-
-                      <div className="property-meta">
-                        <span>{formatArea(property.area)}</span>
-                        <span>{property.bedrooms} quartos</span>
-                        <span>{property.parkingSpaces} vagas</span>
-                      </div>
-
-                      <div className="property-status-row">
-                        <span className="status-pill">{property.category}</span>
-                        {property.mcmv && <span className="status-pill status-green">MCMV</span>}
-                      </div>
-
-                      <button className="button button-primary full-width" onClick={() => setSelectedProperty(property)}>Ver detalhes</button>
-                    </div>
-                  </article>
-                ))}
+              <div className={`property-grid catalog-grid ${showAllCatalog ? 'mobile-expanded' : 'mobile-collapsed'}`}>
+                {filteredProperties.map((property) => <PropertyCard key={property.id} property={property} onSelect={setSelectedProperty} />)}
+              </div>
+            )}
+            {filteredProperties.length > 6 && (
+              <div className="mobile-list-action">
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  aria-expanded={showAllCatalog}
+                  onClick={() => setShowAllCatalog((current) => !current)}
+                >
+                  {showAllCatalog ? 'Mostrar menos imóveis' : `Ver mais ${filteredProperties.length - 6} imóveis`}
+                </button>
               </div>
             )}
           </div>
@@ -374,11 +384,47 @@ function App() {
         <section id="construtoras" className="section section-alt">
           <div className="container">
             <div className="section-heading">
-              <p className="eyebrow">Empresas no catálogo</p>
-              <h2>Imóveis de grandes construtoras</h2>
-              <p>{propertyCatalogNote}</p>
+              <p className="eyebrow">Parceiros no catálogo</p>
+              <h2>Construtoras em destaque</h2>
+              <p>Conheça as construtoras dos empreendimentos Minha Casa Minha Vida selecionados. Toque em uma empresa para ver seus imóveis no catálogo.</p>
             </div>
-            <div className="builder-list">{['Cyrela', 'Vivaz', 'Plano & Plano', 'Kazzas', 'Cury', 'EPH', 'MRV', 'Vibra', 'QuintoAndar'].map((builder) => <span key={builder}>{builder}</span>)}</div>
+            <div className="featured-builders">
+              {featuredBuilders.map((builder) => {
+                const builderProperties = properties.filter((property) => property.builder === builder);
+                const regions = [...new Set(builderProperties.map((property) => property.region))];
+
+                return (
+                  <a
+                    className="featured-builder-card"
+                    href="#imoveis"
+                    key={builder}
+                    onClick={() => setFilters((current) => ({ ...current, builder }))}
+                  >
+                    <span className="featured-builder-label">Em destaque</span>
+                    <strong>{builder}</strong>
+                    <span>{builderProperties.length} {builderProperties.length === 1 ? 'empreendimento' : 'empreendimentos'}</span>
+                    <small>{regions.join(' • ')}</small>
+                  </a>
+                );
+              })}
+            </div>
+
+            {otherBuilders.length > 0 && (
+              <div className="other-builders">
+                <h3>Outras construtoras no catálogo</h3>
+                <div className="builder-list">
+                  {otherBuilders.map((builder) => (
+                    <a
+                      href="#imoveis"
+                      key={builder}
+                      onClick={() => setFilters((current) => ({ ...current, builder }))}
+                    >
+                      {builder}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -559,23 +605,22 @@ function App() {
                 <h3 id="property-modal-title">{selectedProperty.name}</h3>
                 <span className="property-builder">{selectedProperty.builder}</span>
               </div>
-              <p className="property-location">{selectedProperty.neighborhood} • {selectedProperty.region}</p>
-              <div className="property-price">{formatCurrency(selectedProperty.price)}</div>
+              <p className="property-location">{selectedProperty.location} • {selectedProperty.city} • {selectedProperty.region}</p>
               <p>{selectedProperty.description}</p>
               <ul className="feature-list">
                 {selectedProperty.highlights.map((highlight) => <li key={highlight}>{highlight}</li>)}
               </ul>
               <div className="detail-metadata">
-                <span>{selectedProperty.category}</span>
                 <span>{selectedProperty.type}</span>
-                <span>{selectedProperty.bedrooms} quarto(s)</span>
-                <span>{selectedProperty.bathrooms} banheiro(s)</span>
-                <span>{selectedProperty.parkingSpaces} vaga(s)</span>
-                <span>{formatArea(selectedProperty.area)}</span>
+                {selectedProperty.areaLabel && <span>{selectedProperty.areaLabel}</span>}
+                {selectedProperty.bedroomsLabel && <span>{selectedProperty.bedroomsLabel}</span>}
+                {selectedProperty.parkingLabel && <span>{selectedProperty.parkingLabel}</span>}
+                {selectedProperty.statusLabel && <span>{selectedProperty.statusLabel}</span>}
               </div>
               <div className="modal-actions">
                 <a href="#simulacao" className="button button-primary" onClick={() => setSelectedProperty(null)}>Pré-simulação</a>
-                <a href={siteConfig.whatsapp ? `https://wa.me/${siteConfig.whatsapp.replace(/\D/g, '')}` : '#simulacao'} className="button button-secondary" target={siteConfig.whatsapp ? '_blank' : undefined} rel={siteConfig.whatsapp ? 'noreferrer' : undefined}>WhatsApp</a>
+                <a href={getWhatsAppUrl(`Olá, José! Gostaria de saber mais sobre o empreendimento ${selectedProperty.name}.`)} className="button button-secondary" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                <a href={selectedProperty.sourceUrl} className="button button-secondary" target="_blank" rel="noopener noreferrer">Consultar book</a>
               </div>
               <p className="small-note">Consulte disponibilidade e valores atualizados com José.</p>
             </div>

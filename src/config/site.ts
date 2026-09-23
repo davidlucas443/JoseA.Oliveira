@@ -5,9 +5,9 @@ export const siteConfig = {
   phone: '+5511970628450',
   whatsapp: '5511970628450',
   email: 'jaoliveiracorretordeimoveis@gmail.com',
-  serviceArea: 'São Paulo, Grande São Paulo e interior',
+  serviceArea: 'São Paulo e Grande São Paulo',
   title: 'José A. Oliveira | Corretor de imóveis',
-  description: 'Apartamentos e oportunidades em São Paulo, Grande São Paulo e interior, com atendimento próximo.',
+  description: 'Apartamentos Minha Casa Minha Vida em São Paulo e Grande São Paulo, com atendimento próximo.',
   canonicalUrl: 'https://www.joseimoveis.com.br/',
   whatsappLabel: 'WhatsApp',
   phoneLabel: 'Telefone',
@@ -15,5 +15,5 @@ export const siteConfig = {
 };
 
 export const propertyCatalogNote =
-  'Compare opções de diferentes empresas e encontre o imóvel que melhor combina com sua região, seu momento e suas necessidades.';
+  'Seleção exclusiva de empreendimentos Minha Casa Minha Vida, organizada a partir dos books fornecidos. Consulte disponibilidade, valores e condições atualizadas diretamente com José.';
 

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 230" role="img" aria-labelledby="logo-title logo-description">
+  <title id="logo-title">José A. Oliveira</title>
+  <desc id="logo-description">Logotipo JAO com elemento arquitetônico, Corretor de Imóveis, CRECI 331912-F</desc>
+
+  <defs>
+    <linearGradient id="brand-green" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#21372e"/>
+      <stop offset="1" stop-color="#11251d"/>
+    </linearGradient>
+    <linearGradient id="architecture" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#87958e"/>
+      <stop offset="1" stop-color="#66756e"/>
+    </linearGradient>
+  </defs>
+
+  <g aria-label="Monograma JAO">
+    <path fill="url(#brand-green)" d="M54 82h38v81c0 43-23 66-59 66-17 0-28-6-33-17l12-32c7 9 14 14 23 14 13 0 19-11 19-33V82Z"/>
+    <path fill="url(#brand-green)" fill-rule="evenodd" d="M157 72 80 224h43l34-73 34 73h43L157 72Zm95 27a65 65 0 1 0 0 130 65 65 0 0 0 0-130Zm0 35a30 30 0 1 1 0 60 30 30 0 0 1 0-60Z"/>
+    <path fill="url(#architecture)" d="m82 84 75-48 78 48-12 21-66-42-64 42-11-21Z"/>
+    <path fill="url(#architecture)" d="m197 27 29 14v39l-29-18V27Z"/>
+    <path fill="#7b8a83" d="m143 166 14-30 15 32v56l-29-15v-43Z"/>
+    <circle cx="163" cy="190" r="3.7" fill="#f7f4ee"/>
+  </g>
+
+  <g fill="url(#brand-green)">
+    <text x="340" y="102" font-family="Trebuchet MS, Segoe UI, Arial, sans-serif" font-size="62" font-weight="700" letter-spacing="-1.8">José A. Oliveira</text>
+    <text x="343" y="158" font-family="Trebuchet MS, Segoe UI, Arial, sans-serif" font-size="32" font-weight="700" letter-spacing="0.7">CORRETOR DE IMÓVEIS</text>
+    <text x="343" y="207" font-family="Trebuchet MS, Segoe UI, Arial, sans-serif" font-size="32" font-weight="700" letter-spacing="0.7">CRECI 331912-F</text>
+  </g>
+</svg>
